@@ -1,9 +1,10 @@
 """Command-line interface for Torrent Downloader."""
 
 import argparse
-import sys
-from pathlib import Path
 import importlib.util
+import sys
+import tkinter as tk
+from pathlib import Path
 
 
 def import_gui():
@@ -61,8 +62,6 @@ def main():
 
     # Launch GUI if requested or if no magnet link provided
     if args.gui or not args.magnet_link:
-        import tkinter as tk
-
         root = tk.Tk()
         app = gui.TorrentDownloaderApp(root)
 
