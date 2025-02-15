@@ -4,10 +4,12 @@ A modern, user-friendly torrent downloader application built with Python and lib
 
 ## Features
 
-- Simple command-line interface
+- Flexible interface with both GUI and CLI modes
 - Cross-platform support (Windows, macOS, Linux)
 - Easy-to-use magnet link support
 - Built with libtorrent for reliable downloads
+- Real-time progress tracking
+- Smart download directory management
 
 ## Installation
 
@@ -29,9 +31,40 @@ pip install torrent-downloader-python
 
 ## Usage
 
+The application supports both GUI and CLI modes:
+
+### GUI Mode
 ```bash
-# Download using a magnet link
+# Launch the GUI
+torrent-downloader
+
+# Launch GUI with a pre-filled magnet link
 torrent-downloader "magnet:?xt=urn:btih:..."
+
+# Launch GUI with custom download directory
+torrent-downloader --gui -o "/custom/path"
+```
+
+### CLI Mode
+```bash
+# Download a torrent in headless mode
+torrent-downloader "magnet:?xt=urn:btih:..." -o "/custom/path"
+```
+
+### Command Line Options
+```
+usage: torrent-downloader [-h] [--gui] [-o OUTPUT_DIR] [magnet_link]
+
+Download torrents using magnet links. Supports both GUI and CLI modes.
+
+positional arguments:
+  magnet_link           Magnet link to download (launches GUI if not provided)
+
+options:
+  -h, --help           show this help message and exit
+  --gui                Launch in GUI mode (default if no magnet link is provided)
+  -o, --output-dir     Directory to save downloaded files
+                       (default: ~/Downloads/TorrentDownloader)
 ```
 
 ## Development
@@ -56,6 +89,13 @@ pip install -r requirements.txt
 4. Run tests:
 ```bash
 pytest
+```
+
+## Building from Source
+
+```bash
+python -m build
+pip install dist/torrent-downloader-*.whl
 ```
 
 ## License

@@ -2,7 +2,7 @@
 
 A modern, user-friendly torrent downloader application with two implementations:
 1. **torrent-downloader-react**: A full-featured web application built with React and Python
-2. **torrent-downloader-python**: A lightweight command-line interface
+2. **torrent-downloader-python**: A flexible application with both GUI and CLI modes
 
 ## Features
 
@@ -13,11 +13,12 @@ A modern, user-friendly torrent downloader application with two implementations:
 - Easy-to-use magnet link support
 - Built with React and FastAPI
 
-### Python CLI
-- Simple command-line interface
-- Lightweight and efficient
+### Python Application
+- Flexible interface with both GUI and CLI modes
+- Real-time progress tracking
+- Smart download directory management
 - Cross-platform support
-- Direct magnet link downloads
+- Built with libtorrent for reliable downloads
 
 ## Prerequisites
 
@@ -78,7 +79,7 @@ torrent-downloader-react
 
 The web application will start and open in your default web browser at http://127.0.0.1:8000
 
-### Python CLI
+### Python Application
 
 ```bash
 # 1. Install system dependencies (see Prerequisites section above)
@@ -90,8 +91,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # 3. Install the package
 pip install torrent-downloader-python
 
-# 4. Run the CLI
-torrent-downloader-python "magnet:?xt=urn:btih:..."
+# 4. Run the application
+# GUI mode:
+torrent-downloader
+
+# CLI mode:
+torrent-downloader "magnet:?xt=urn:btih:..."
 ```
 
 ## Development
@@ -112,12 +117,12 @@ pip install -r requirements.txt
 python -m torrent_downloader.server
 ```
 
-### Python CLI
+### Python Application
 
 ```bash
 cd torrent-downloader-python
 pip install -e .
-python -m torrent_downloader "magnet:?xt=urn:btih:..."
+python -m torrent_downloader.cli
 ```
 
 ## Project Structure
@@ -132,9 +137,11 @@ torrent-downloader/
 │   │   └── build.py             # Build script
 │   └── package.json             # Frontend dependencies
 │
-└── torrent-downloader-python/    # Python CLI application
-    ├── torrent_downloader/       # CLI package
-    ├── tests/                    # CLI tests
+└── torrent-downloader-python/    # Python application
+    ├── torrent_downloader/       # Python package
+    │   ├── cli.py               # CLI/GUI wrapper
+    │   └── gui.py               # GUI implementation
+    ├── tests/                    # Tests
     └── setup.py                  # Package configuration
 ```
 

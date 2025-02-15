@@ -1,14 +1,16 @@
-# Torrent Downloader
+# Torrent Downloader (React)
 
 A modern, user-friendly torrent downloader application built with React and Python.
 
 ## Features
 
-- Clean, modern user interface
+- Clean, modern user interface with dark mode support
 - Real-time download progress and speed monitoring
 - Cross-platform support (Windows, macOS, Linux)
 - Easy-to-use magnet link support
-- Dark mode support
+- Built with React and FastAPI
+- Estimated time remaining (ETA) for downloads
+- Smart download directory management
 
 ## Prerequisites
 
@@ -90,7 +92,7 @@ pip install dist/torrent-downloader-*.whl
 
 4. Run the application:
 ```bash
-torrent-downloader
+torrent-downloader-react
 ```
 
 ## Usage
