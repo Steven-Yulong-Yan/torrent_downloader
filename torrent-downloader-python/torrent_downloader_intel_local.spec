@@ -130,10 +130,8 @@ a = Analysis(
         '/usr/local/lib/python3.13/site-packages',
     ],
     binaries=[
-        ('/usr/local/lib/libtorrent-rasterbar.2.0.11.dylib', 'Frameworks/libtorrent'),
-        ('/usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', 'Frameworks/libtorrent'),
-        ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks/libtorrent'),
-        ('/usr/local/lib/libtorrent-rasterbar.dylib', 'Frameworks/libtorrent'),
+        ('/opt/homebrew/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks/libtorrent'),
+        ('/opt/homebrew/lib/python3.12/site-packages/libtorrent.cpython-312-darwin.so', 'Frameworks/libtorrent'),
     ],
     datas=[
         (tcl_lib, 'Frameworks/tcl/Resources'),

@@ -1,8 +1,14 @@
-import tkinter as tk
-from tkinter import scrolledtext, messagebox, ttk
-import sys
-import time
+"""GUI interface for Torrent Downloader."""
+
 import os
+import platform
+import subprocess
+import sys
+import threading
+import time
+import tkinter as tk
+from pathlib import Path
+from tkinter import filedialog, messagebox, ttk
 import logging
 import traceback
 
@@ -113,8 +119,12 @@ except ImportError as e:
     print('Error: libtorrent module not found. Please install it with pip install python-libtorrent (or similar package).')
     sys.exit(1)
 
+# Constants
+DOWNLOAD_DIR = os.path.expanduser("~/Downloads/TorrentDownloader")
+REFRESH_INTERVAL = 1000  # milliseconds
 
 class TorrentDownloaderApp:
+    """Main GUI application class."""
     def __init__(self, master):
         self.master = master
         master.title("Torrent Downloader")
