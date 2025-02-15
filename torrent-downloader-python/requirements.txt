@@ -1,17 +1,13 @@
 # Development dependencies
-pytest>=8.0.0
+pytest>=5.0.0
 pytest-cov>=5.0.0
-isort>=5.13.0
+black>=24.0.0
 mypy>=1.8.0
 
 # Build dependencies
 pyinstaller>=6.0.0
-pillow>=10.0.0  # For icon conversion
-cairosvg>=2.7.0  # For SVG to PNG conversion
+pillow>=10.0.0
 
-# Platform-specific dependencies for libtorrent:
-# Windows: pip install python-libtorrent
-# macOS: brew install libtorrent-rasterbar
-# Linux (Ubuntu/Debian): apt-get install python3-libtorrent
-# Linux (Fedora): dnf install rb_libtorrent-python3
-# Conda (all platforms): conda install -c conda-forge libtorrent 
+# Platform-specific dependencies
+libtorrent>=2.0.0
+pywin32>=306; platform_system == "Windows" 

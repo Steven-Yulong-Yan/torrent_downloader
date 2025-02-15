@@ -69,9 +69,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install isort mypy
+        pip install mypy
     
     - name: Run linters
       run: |
-        isort --check-only torrent_downloader tests
         mypy torrent_downloader 

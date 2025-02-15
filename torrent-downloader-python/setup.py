@@ -3,19 +3,34 @@ import sys
 
 # Define platform-specific dependencies
 if sys.platform == 'win32':
-    libtorrent_requires = ['libtorrent>=2.0.0']
+    platform_requires = [
+        'libtorrent>=2.0.0',
+        'pywin32>=306',  # For Windows-specific features
+    ]
+elif sys.platform == 'darwin':
+    platform_requires = [
+        'libtorrent>=2.0.0',  # macOS pip-installable version
+    ]
 else:
-    # On macOS and Linux, libtorrent should be installed via system package manager
-    libtorrent_requires = []
+    # Linux
+    platform_requires = [
+        'libtorrent>=2.0.0',  # Linux pip-installable version
+    ]
+
+# Common dependencies for all platforms
+common_requires = [
+    'pillow>=10.0.0',  # For image handling
+    'tkinter',  # Usually included with Python, but list it for clarity
+]
 
 setup(
     name="torrent-downloader-python",
-    version="1.0.10",
+    version="1.0.11",
     packages=find_packages(),
     package_data={
         'torrent_downloader': ['torrent_downloader_gui.py'],
     },
-    install_requires=libtorrent_requires,
+    install_requires=common_requires + platform_requires,
     entry_points={
         "console_scripts": [
             "torrent-downloader=torrent_downloader.cli:main",

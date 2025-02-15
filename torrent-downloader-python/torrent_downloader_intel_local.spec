@@ -127,7 +127,7 @@ a = Analysis(
         '/usr/local/lib',
         os.path.join(python_home, 'lib'),
         os.path.dirname(python_path),
-        '/usr/local/lib/python3.13/site-packages',
+        '/opt/homebrew/lib/python3.12/site-packages',
     ],
     binaries=[
         ('/opt/homebrew/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks/libtorrent'),
