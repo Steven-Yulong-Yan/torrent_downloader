@@ -3,7 +3,7 @@ import sys
 
 # Define platform-specific dependencies
 if sys.platform == 'win32':
-    libtorrent_requires = ['python-libtorrent>=2.0.0']
+    libtorrent_requires = ['libtorrent>=2.0.0']
 else:
     # On macOS and Linux, libtorrent should be installed via system package manager
     libtorrent_requires = []

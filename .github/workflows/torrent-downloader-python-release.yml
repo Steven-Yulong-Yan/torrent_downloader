@@ -80,13 +80,15 @@ jobs:
             mingw-w64-x86_64-python-cairo
             mingw-w64-x86_64-pkg-config
       
-      - name: Install dependencies
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install python-libtorrent>=2.0.0
+          pip install libtorrent
           pip install pyinstaller
-          pip install pycairo PyGObject cairosvg pillow
+          pip install pycairo
+          pip install --upgrade setuptools wheel
       
       - name: Generate icons
         run: python generate_icons.py
@@ -129,6 +131,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
+          brew link --force cairo
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller cairosvg pillow
