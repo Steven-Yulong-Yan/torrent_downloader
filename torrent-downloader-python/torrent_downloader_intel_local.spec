@@ -2,6 +2,7 @@
 
 import os
 import sys
+import tkinter
 from PyInstaller.utils.hooks import collect_dynamic_libs
 
 block_cipher = None
@@ -10,10 +11,9 @@ block_cipher = None
 python_path = sys.executable
 python_home = os.path.dirname(os.path.dirname(python_path))
 
-# Add Tkinter dependencies - use system frameworks
-tcl_tk_root = '/System/Library/Frameworks'
-tcl_lib = os.path.join(tcl_tk_root, 'Tcl.framework/Versions/Current/Resources')
-tk_lib = os.path.join(tcl_tk_root, 'Tk.framework/Versions/Current/Resources')
+# Get Tcl/Tk paths
+tcl_lib = os.path.join(python_home, 'lib', 'tcl8.6')
+tk_lib = os.path.join(python_home, 'lib', 'tk8.6')
 
 # Create a runtime hook for Tkinter initialization
 with open('tk_runtime_hook.py', 'w') as f:
@@ -122,7 +122,7 @@ _fix_libtorrent()
 """)
 
 a = Analysis(
-    ['torrent_downloader_gui.py'],
+    ['torrent_downloader/torrent_downloader_gui.py'],
     pathex=[
         '/usr/local/lib',
         os.path.join(python_home, 'lib'),
