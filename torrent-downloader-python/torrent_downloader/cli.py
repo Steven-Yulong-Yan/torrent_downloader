@@ -9,9 +9,7 @@ import importlib.util
 def import_gui():
     """Import the GUI module dynamically."""
     # Get the path to the GUI module
-    gui_path = (
-        Path(__file__).parent.parent / "torrent_downloader_gui.py"
-    )
+    gui_path = Path(__file__).parent.parent / "torrent_downloader_gui.py"
 
     if not gui_path.exists():
         print("Error: GUI module not found", file=sys.stderr)
@@ -19,7 +17,8 @@ def import_gui():
 
     # Import the module
     spec = importlib.util.spec_from_file_location(
-        "torrent_downloader_gui", gui_path
+        "torrent_downloader_gui",
+        gui_path,
     )
     gui = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gui)
@@ -32,7 +31,7 @@ def main():
         description=(
             "Download torrents using magnet links. "
             "Supports both GUI and CLI modes."
-        )
+        ),
     )
     parser.add_argument(
         "--gui",
