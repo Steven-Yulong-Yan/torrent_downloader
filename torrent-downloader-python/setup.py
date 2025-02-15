@@ -10,7 +10,7 @@ else:
 
 setup(
     name="torrent-downloader-python",
-    version="1.0.5",
+    version="1.0.6",
     packages=find_packages(),
     package_data={
         'torrent_downloader': ['torrent_downloader_gui.py'],
