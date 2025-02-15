@@ -1,1 +1,1 @@
-"""Test suite for the Torrent Downloader application.""" 
+"""Test suite for the Torrent Downloader application."""
