@@ -1,19 +1,62 @@
-name: Build Application
+name: Torrent Downloader Python Build
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 defaults:
   run:
     working-directory: torrent-downloader-python
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  tests:
+    name: Run Tests (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install system dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libtorrent-rasterbar-dev
+    
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install libtorrent-rasterbar
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        python -m pytest --cov=torrent_downloader tests/
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     
@@ -22,422 +65,15 @@ jobs:
       with:
         python-version: '3.12'
         cache: 'pip'
-        
-    - name: Setup MSYS2
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        update: true
-        install: >-
-          mingw-w64-x86_64-cairo
-          mingw-w64-x86_64-gtk3
-          mingw-w64-x86_64-python-cairo
-          mingw-w64-x86_64-pkg-config
-        
+    
     - name: Install dependencies
       run: |
-        echo "::group::Upgrading pip and installing dependencies"
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install python-libtorrent>=2.0.0
-        pip install pyinstaller
-        echo "::endgroup::"
-        
-        echo "::group::Verifying Python installation"
-        python -c "import sys; print(f'Python version: {sys.version}')"
-        python -c "import platform; print(f'Platform: {platform.platform()}')"
-        pip list
-        echo "::endgroup::"
-        
-        echo "::group::Verifying critical dependencies"
-        python -c "import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
-        python -c "import tkinter; print('Tkinter is available')"
-        echo "::endgroup::"
-        
-    - name: Install Python dependencies
-      run: |
-        echo "::group::Installing Python dependencies"
-        pip install --upgrade pip wheel setuptools
-        
-        # Add MSYS2 bin directory to PATH for DLLs
-        echo "${{ github.workspace }}/msys64/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
-        
-        # Set PKG_CONFIG_PATH for Cairo
-        $env:PKG_CONFIG_PATH = "${{ github.workspace }}/msys64/mingw64/lib/pkgconfig"
-        
-        pip install pycairo
-        pip install PyGObject
-        pip install cairosvg pillow
-        echo "::endgroup::"
-        
-    - name: Generate icons
-      run: |
-        echo "::group::Generating icons"
-        # Add MSYS2 bin to PATH for the Cairo DLLs
-        $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
-        
-        # Create Python script and write it using Set-Content
-        $script = @'
-        try:
-            import cairosvg
-            import os
-            from PIL import Image
-            print("Attempting to convert SVG using CairoSVG...")
-            cairosvg.svg2png(url="icon.svg", write_to="icon_256.png", output_width=256, output_height=256)
-        except Exception as e:
-            print("CairoSVG failed: " + str(e))
-            print("Falling back to PIL for direct PNG to ICO conversion...")
-            from PIL import Image
-            img = Image.new("RGB", (256, 256), "#2196F3")
-            from PIL import ImageDraw
-            draw = ImageDraw.Draw(img)
-            draw.rectangle((120, 60, 136, 160), fill="white")
-            points = [(80, 140), (128, 196), (176, 140)]
-            draw.polygon(points, fill="white")
-            img.save("icon_256.png")
-        img = Image.open("icon_256.png")
-        img.save("icon.ico", format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-        print("Icon generation completed successfully")
-        '@
-        Set-Content -Path generate_icons.py -Value $script -Encoding UTF8
-        
-        # Execute the script
-        python generate_icons.py
-        
-        if (-not (Test-Path "icon.ico")) {
-          echo "::error::icon.ico was not generated"
-          exit 1
-        }
-        echo "::endgroup::"
-      
-    - name: Build Windows executable
-      run: |
-        echo "::group::Starting Windows build"
-        pyinstaller torrent_downloader_win.spec
-        echo "Build completed. Checking dist directory..."
-        dir dist
-        
-        # Check for the directory-based build
-        if (-not (Test-Path "dist/TorrentDownloader")) {
-          echo "::error::TorrentDownloader directory was not generated"
-          exit 1
-        }
-        
-        # Check for the executable inside the directory
-        if (-not (Test-Path "dist/TorrentDownloader/TorrentDownloader.exe")) {
-          echo "::error::TorrentDownloader.exe was not found in the correct location"
-          echo "Contents of dist/TorrentDownloader:"
-          dir "dist/TorrentDownloader"
-          exit 1
-        }
-        
-        # Verify the executable size
-        $exeFile = Get-Item "dist/TorrentDownloader/TorrentDownloader.exe"
-        echo "Executable size: $($exeFile.Length) bytes"
-        if ($exeFile.Length -lt 1000000) {
-          echo "::warning::Executable seems unusually small"
-        }
-        echo "::endgroup::"
-      
-    - name: Create Windows ZIP
-      run: |
-        cd dist
-        echo "::group::Creating ZIP archive"
-        Compress-Archive -Path TorrentDownloader -DestinationPath TorrentDownloader-Windows.zip
-        $zipFile = Get-Item TorrentDownloader-Windows.zip
-        echo "ZIP file size: $($zipFile.Length) bytes"
-        if ($zipFile.Length -lt 1000000) {
-          echo "::warning::ZIP file seems unusually small"
-        }
-        echo "::endgroup::"
-        
-    - name: Upload Windows artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: TorrentDownloader-Windows
-        path: dist/TorrentDownloader-Windows.zip
-        compression-level: 0
-
-  build-macos-arm64:
-    runs-on: macos-14
-    steps:
-    - uses: actions/checkout@v4
+        pip install flake8 black isort mypy
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
-        cache: 'pip'
-        
-    - name: Install dependencies
+    - name: Run linters
       run: |
-        echo "::group::Installing system dependencies"
-        brew update
-        
-        # Clean up existing installations
-        brew uninstall --ignore-dependencies boost-python3 || true
-        brew uninstall --ignore-dependencies libtorrent-rasterbar || true
-        brew uninstall --ignore-dependencies boost || true
-        
-        # Install Python 3.13 from Homebrew
-        brew install python@3.13
-        brew link --force python@3.13
-        
-        # Get Python paths
-        PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-        PYTHON_ROOT=$(brew --prefix python@3.13)
-        echo "Python version: $PYTHON_VERSION"
-        echo "Python root: $PYTHON_ROOT"
-        
-        # Install dependencies
-        brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
-        echo "::endgroup::"
-        
-        echo "::group::Installing Python dependencies"
-        python3 -m pip install --upgrade pip
-        pip3 install -r requirements.txt
-        pip3 install pyinstaller
-        
-        # Install libtorrent Python bindings
-        echo "Installing libtorrent Python bindings..."
-        LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
-        BOOST_PATH=$(brew --prefix boost)
-        
-        # Set environment variables for building Python bindings
-        export CFLAGS="-I$LIBTORRENT_PATH/include -I$BOOST_PATH/include"
-        export LDFLAGS="-L$LIBTORRENT_PATH/lib -L$BOOST_PATH/lib"
-        export PKG_CONFIG_PATH="$LIBTORRENT_PATH/lib/pkgconfig:$BOOST_PATH/lib/pkgconfig"
-        export DYLD_LIBRARY_PATH="$LIBTORRENT_PATH/lib:$BOOST_PATH/lib:$DYLD_LIBRARY_PATH"
-        
-        # Create symbolic links for the libraries
-        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-        echo "Site packages directory: $SITE_PACKAGES"
-        
-        # Link the libtorrent library
-        for lib in $LIBTORRENT_PATH/lib/libtorrent-rasterbar.*.dylib; do
-          sudo ln -sf "$lib" "$SITE_PACKAGES/"
-        done
-        
-        echo "::endgroup::"
-        
-    - name: Generate icons
-      run: |
-        echo "::group::Installing CairoSVG dependencies"
-        pip install cairosvg pillow
-        echo "::endgroup::"
-        
-        echo "::group::Generating icons"
-        export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
-        python convert_icons.py
-        if [ ! -f "icon.icns" ]; then
-          echo "::error::icon.icns was not generated"
-          exit 1
-        fi
-        ls -l icon.*
-        echo "::endgroup::"
-      
-    - name: Build macOS ARM64 application
-      run: |
-        echo "::group::Starting macOS ARM64 build"
-        sudo mkdir -p /usr/local/lib
-        LIBTORRENT_RASTERBAR=$(find "$(brew --prefix libtorrent-rasterbar)/lib" -type f -name "libtorrent-rasterbar.*.dylib" | head -n1)
-        if [ -z "$LIBTORRENT_RASTERBAR" ]; then
-          echo "Error: libtorrent-rasterbar library not found" 
-          exit 1
-        fi
-        sudo cp "$LIBTORRENT_RASTERBAR" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.dylib
-        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.dylib
-        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
-        sudo chmod 755 "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
-        echo "Contents of site-packages ($SITE_PACKAGES):"; sudo ls -la "$SITE_PACKAGES"
-        sudo mkdir -p /usr/local/lib/python3.13/site-packages
-        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-        sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-        echo "Contents of /usr/local/lib/python3.13/site-packages:"; sudo ls -la /usr/local/lib/python3.13/site-packages
-        
-        # Build Apple Silicon (arm64) version
-        echo "Building arm64 version..."
-        pyinstaller torrent_downloader.spec
-        
-        # Sign all dylibs and binaries in the app bundle
-        echo "Signing arm64 version..."
-        find "dist/TorrentDownloader.app" -type f -name "*.dylib" -o -name "*.so" | while read lib; do
-          codesign --force --sign "-" --timestamp --options runtime --entitlements entitlements.plist "$lib"
-        done
-        codesign --force --deep --sign "-" --timestamp --options runtime --entitlements entitlements.plist "dist/TorrentDownloader.app"
-        
-        echo "Build completed. Checking dist directory..."
-        ls -la dist
-        echo "::endgroup::"
-      
-    - name: Create macOS ARM64 ZIP
-      run: |
-        cd dist
-        echo "::group::Creating ZIP archive"
-        zip -r TorrentDownloader-macOS-arm64.zip TorrentDownloader.app
-        ARM64_SIZE=$(stat -f%z TorrentDownloader-macOS-arm64.zip)
-        echo "ARM64 ZIP file size: $ARM64_SIZE bytes"
-        if [ "$ARM64_SIZE" -lt 1000000 ]; then
-          echo "::warning::ARM64 ZIP file seems unusually small"
-        fi
-        ls -lh TorrentDownloader-macOS-arm64.zip
-        echo "::endgroup::"
-        
-    - name: Upload macOS ARM64 artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: TorrentDownloader-macOS-arm64
-        path: dist/TorrentDownloader-macOS-arm64.zip
-        compression-level: 0
-
-  build-macos-intel:
-    runs-on: macos-13
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.13'
-        cache: 'pip'
-        
-    - name: Install dependencies
-      run: |
-        echo "::group::Installing system dependencies"
-        brew update
-        
-        # Clean up existing installations and links
-        brew uninstall --ignore-dependencies boost-python3 || true
-        brew uninstall --ignore-dependencies libtorrent-rasterbar || true
-        brew uninstall --ignore-dependencies boost || true
-        brew uninstall --ignore-dependencies python@3.13 || true
-        
-        # Remove conflicting Python symlinks
-        sudo rm -f /usr/local/bin/idle3*
-        sudo rm -f /usr/local/bin/pydoc3*
-        sudo rm -f /usr/local/bin/python3*
-        sudo rm -f /usr/local/bin/pip3*
-        
-        # Install Python 3.13 from Homebrew with x86_64 architecture
-        arch -x86_64 /bin/bash -c "
-          brew install python@3.13
-          brew link --force --overwrite python@3.13
-          
-          # Install dependencies with x86_64 architecture
-          brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
-          
-          # Get Python paths
-          PYTHON_VERSION=\$(python3 -c \"import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')\")
-          PYTHON_ROOT=\$(brew --prefix python@3.13)
-          echo \"Python version: \$PYTHON_VERSION\"
-          echo \"Python root: \$PYTHON_ROOT\"
-          
-          # Set environment variables for building Python bindings
-          LIBTORRENT_PATH=\$(brew --prefix libtorrent-rasterbar)
-          BOOST_PATH=\$(brew --prefix boost)
-          export CFLAGS=\"-I\$LIBTORRENT_PATH/include -I\$BOOST_PATH/include\"
-          export LDFLAGS=\"-L\$LIBTORRENT_PATH/lib -L\$BOOST_PATH/lib\"
-          export PKG_CONFIG_PATH=\"\$LIBTORRENT_PATH/lib/pkgconfig:\$BOOST_PATH/lib/pkgconfig\"
-          export DYLD_LIBRARY_PATH=\"\$LIBTORRENT_PATH/lib:\$BOOST_PATH/lib:\$DYLD_LIBRARY_PATH\"
-          
-          # Create symbolic links for the libraries
-          SITE_PACKAGES=\$(python3 -c \"import site; print(site.getsitepackages()[0])\")
-          echo \"Site packages directory: \$SITE_PACKAGES\"
-          
-          # Link the libtorrent library
-          for lib in \$LIBTORRENT_PATH/lib/libtorrent-rasterbar.*.dylib; do
-            sudo ln -sf \"\$lib\" \"\$SITE_PACKAGES/\"
-          done
-        "
-        echo "::endgroup::"
-        
-        echo "::group::Installing Python dependencies"
-        arch -x86_64 /bin/bash -c "
-          python3 -m pip install --upgrade pip
-          pip3 install -r requirements.txt
-          pip3 install pyinstaller
-        "
-        echo "::endgroup::"
-        
-    - name: Generate icons
-      run: |
-        echo "::group::Installing CairoSVG dependencies"
-        pip install cairosvg pillow
-        echo "::endgroup::"
-        
-        echo "::group::Generating icons"
-        export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
-        python convert_icons.py
-        if [ ! -f "icon.icns" ]; then
-          echo "::error::icon.icns was not generated"
-          exit 1
-        fi
-        ls -l icon.*
-        echo "::endgroup::"
-      
-    - name: Build macOS Intel application
-      run: |
-        echo "::group::Starting macOS Intel build"
-        arch -x86_64 /bin/bash -c "
-          sudo mkdir -p /usr/local/lib
-          LIBTORRENT_RASTERBAR=\$(find \"\$(brew --prefix libtorrent-rasterbar)/lib\" -type f -name \"libtorrent-rasterbar.*.dylib\" | head -n1)
-          if [ -z \"\$LIBTORRENT_RASTERBAR\" ]; then
-            echo \"Error: libtorrent-rasterbar library not found\" 
-            exit 1
-          fi
-          sudo cp \"\$LIBTORRENT_RASTERBAR\" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-          sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-          sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.dylib
-          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.dylib
-          SITE_PACKAGES=\$(python3 -c \"import site; print(site.getsitepackages()[0])\")
-          sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
-          sudo chmod 755 \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
-          echo \"Contents of site-packages (\$SITE_PACKAGES):\"; sudo ls -la \"\$SITE_PACKAGES\"
-          sudo mkdir -p /usr/local/lib/python3.13/site-packages
-          sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-          sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-          echo \"Contents of /usr/local/lib/python3.13/site-packages:\"; sudo ls -la /usr/local/lib/python3.13/site-packages
-          
-          # Build Intel (x86_64) version
-          echo \"Building Intel version...\"
-          pyinstaller torrent_downloader_intel.spec
-        "
-        
-        # Sign all dylibs and binaries in the app bundle
-        echo "Signing Intel version..."
-        find "dist/TorrentDownloader-Intel.app" -type f -name "*.dylib" -o -name "*.so" | while read lib; do
-          codesign --force --sign "-" --timestamp --options runtime --entitlements entitlements.plist "$lib"
-        done
-        codesign --force --deep --sign "-" --timestamp --options runtime --entitlements entitlements.plist "dist/TorrentDownloader-Intel.app"
-        
-        echo "Build completed. Checking dist directory..."
-        ls -la dist
-        echo "::endgroup::"
-      
-    - name: Create macOS Intel ZIP
-      run: |
-        cd dist
-        echo "::group::Creating ZIP archive"
-        zip -r TorrentDownloader-macOS-intel.zip TorrentDownloader-Intel.app
-        INTEL_SIZE=$(stat -f%z TorrentDownloader-macOS-intel.zip)
-        echo "Intel ZIP file size: $INTEL_SIZE bytes"
-        if [ "$INTEL_SIZE" -lt 1000000 ]; then
-          echo "::warning::Intel ZIP file seems unusually small"
-        fi
-        ls -lh TorrentDownloader-macOS-intel.zip
-        echo "::endgroup::"
-        
-    - name: Upload macOS Intel artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: TorrentDownloader-macOS-intel
-        path: dist/TorrentDownloader-macOS-intel.zip
-        compression-level: 0 
+        flake8 torrent_downloader tests
+        black --check torrent_downloader tests
+        isort --check-only torrent_downloader tests
+        mypy torrent_downloader 

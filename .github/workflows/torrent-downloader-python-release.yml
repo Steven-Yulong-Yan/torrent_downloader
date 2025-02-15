@@ -1,0 +1,164 @@
+name: Torrent Downloader Python Release
+
+permissions:
+  contents: write
+  packages: write
+
+on:
+  push:
+    tags:
+      - 'python-v*'
+
+defaults:
+  run:
+    working-directory: torrent-downloader-python
+
+jobs:
+  create-pypi-release:
+    name: Create PyPI Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtorrent-rasterbar-dev
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine wheel setuptools
+          pip install -r requirements.txt
+      
+      - name: Build package
+        run: python -m build
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+      
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_PYTHON }}
+        run: twine upload dist/*
+
+  build-windows:
+    name: Build Windows Executable
+    needs: create-pypi-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-cairo
+            mingw-w64-x86_64-gtk3
+            mingw-w64-x86_64-python-cairo
+            mingw-w64-x86_64-pkg-config
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install python-libtorrent>=2.0.0
+          pip install pyinstaller
+          pip install pycairo PyGObject cairosvg pillow
+      
+      - name: Generate icons
+        run: python generate_icons.py
+      
+      - name: Build Windows executable
+        run: pyinstaller torrent_downloader_win.spec
+      
+      - name: Create Windows ZIP
+        run: |
+          cd dist
+          Compress-Archive -Path TorrentDownloader -DestinationPath TorrentDownloader-Windows.zip
+      
+      - name: Update Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/TorrentDownloader-Windows.zip
+
+  build-macos:
+    name: Build macOS Executables
+    needs: create-pypi-release
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14
+            arch: arm64
+            python: '3.13'
+          - runner: macos-13
+            arch: intel
+            python: '3.13'
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller cairosvg pillow
+      
+      - name: Generate icons
+        run: python convert_icons.py
+      
+      - name: Build macOS application
+        run: |
+          if [ "${{ matrix.arch }}" = "intel" ]; then
+            arch -x86_64 pyinstaller torrent_downloader_intel.spec
+            APP_NAME="TorrentDownloader-Intel.app"
+            ZIP_NAME="TorrentDownloader-macOS-intel.zip"
+          else
+            pyinstaller torrent_downloader.spec
+            APP_NAME="TorrentDownloader.app"
+            ZIP_NAME="TorrentDownloader-macOS-arm64.zip"
+          fi
+          
+          # Sign the application
+          find "dist/$APP_NAME" -type f -name "*.dylib" -o -name "*.so" | while read lib; do
+            codesign --force --sign "-" --timestamp --options runtime --entitlements entitlements.plist "$lib"
+          done
+          codesign --force --deep --sign "-" --timestamp --options runtime --entitlements entitlements.plist "dist/$APP_NAME"
+          
+          # Create ZIP
+          cd dist
+          zip -r "$ZIP_NAME" "$APP_NAME"
+      
+      - name: Update Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/TorrentDownloader-macOS-${{ matrix.arch }}.zip 
