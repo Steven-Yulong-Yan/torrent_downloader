@@ -10,7 +10,7 @@ from pathlib import Path
 def import_gui():
     """Import the GUI module dynamically."""
     # Get the path to the GUI module
-    gui_path = Path(__file__).parent / "torrent_downloader_gui.py"
+    gui_path = Path(__file__).parent.parent / "torrent_downloader_gui.py"
 
     if not gui_path.exists():
         print("Error: GUI module not found", file=sys.stderr)

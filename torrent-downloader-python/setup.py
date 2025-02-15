@@ -10,7 +10,7 @@ else:
 
 setup(
     name="torrent-downloader-python",
-    version="1.0.4",
+    version="1.0.5",
     packages=find_packages(),
     install_requires=libtorrent_requires,
     entry_points={

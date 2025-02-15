@@ -2,4 +2,4 @@
 Torrent Downloader - A modern, user-friendly torrent downloader application.
 """
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
