@@ -1,0 +1,3 @@
+include torrent_downloader/torrent_downloader_gui.py
+include README.md
+include LICENSE 

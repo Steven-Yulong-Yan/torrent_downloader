@@ -130,20 +130,27 @@ jobs:
       - name: Install dependencies
         run: |
           # Install system dependencies
-          brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
+          brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config libffi
           brew link --force cairo
+          brew link --force libffi
           
           # Set PKG_CONFIG_PATH and other environment variables
           echo "PKG_CONFIG_PATH=$(brew --prefix cairo)/lib/pkgconfig:$(brew --prefix libffi)/lib/pkgconfig" >> $GITHUB_ENV
           echo "LDFLAGS=-L$(brew --prefix cairo)/lib -L$(brew --prefix libffi)/lib" >> $GITHUB_ENV
           echo "CFLAGS=-I$(brew --prefix cairo)/include -I$(brew --prefix libffi)/include" >> $GITHUB_ENV
+          echo "DYLD_LIBRARY_PATH=$(brew --prefix cairo)/lib:$(brew --prefix libffi)/lib" >> $GITHUB_ENV
           
           # Install Python dependencies
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
+          
+          # Install Cairo dependencies in the correct order
+          pip install wheel
+          pip install setuptools --upgrade
           pip install pycairo --no-binary :all:
-          pip install cairosvg
+          pip install cairocffi --no-binary :all:
+          pip install cairosvg --no-binary :all:
           pip install pillow
       
       - name: Generate icons
@@ -151,6 +158,7 @@ jobs:
           PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
           LDFLAGS: ${{ env.LDFLAGS }}
           CFLAGS: ${{ env.CFLAGS }}
+          DYLD_LIBRARY_PATH: ${{ env.DYLD_LIBRARY_PATH }}
         run: python convert_icons.py
       
       - name: Build macOS application
