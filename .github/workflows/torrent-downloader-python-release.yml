@@ -29,7 +29,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libtorrent-rasterbar-dev
+          sudo apt-get install -y libtorrent-rasterbar-dev libcairo2-dev pkg-config python3-dev
       
       - name: Install dependencies
         run: |
@@ -80,8 +80,7 @@ jobs:
             mingw-w64-x86_64-python-cairo
             mingw-w64-x86_64-pkg-config
       
-      - name: Install dependencies (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -91,7 +90,7 @@ jobs:
           pip install --upgrade setuptools wheel
       
       - name: Generate icons
-        run: python generate_icons.py
+        run: python convert_icons.py
       
       - name: Build Windows executable
         run: pyinstaller torrent_downloader_win.spec
@@ -114,10 +113,10 @@ jobs:
         include:
           - runner: macos-14
             arch: arm64
-            python: '3.13'
+            python: '3.12'
           - runner: macos-13
             arch: intel
-            python: '3.13'
+            python: '3.12'
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -130,11 +129,20 @@ jobs:
       
       - name: Install dependencies
         run: |
+          # Install system dependencies
           brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
           brew link --force cairo
+          
+          # Set PKG_CONFIG_PATH for Cairo
+          echo "PKG_CONFIG_PATH=$(brew --prefix cairo)/lib/pkgconfig" >> $GITHUB_ENV
+          
+          # Install Python dependencies
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pyinstaller cairosvg pillow
+          pip install pyinstaller
+          pip install pycairo
+          pip install cairosvg
+          pip install pillow
       
       - name: Generate icons
         run: python convert_icons.py
