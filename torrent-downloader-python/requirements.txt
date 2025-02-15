@@ -7,3 +7,10 @@ cairosvg>=2.7.0  # For SVG to PNG conversion
 # Windows: pip install python-libtorrent
 # macOS: Use brew install libtorrent-rasterbar instead of pip
 # Linux: Use system package manager (apt/dnf/etc) for libtorrent-rasterbar 
+
+libtorrent-python>=2.0.0
+pytest>=8.0.0
+black>=24.0.0
+flake8>=7.0.0
+isort>=5.13.0
+mypy>=1.8.0 
