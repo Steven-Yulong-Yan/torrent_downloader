@@ -25,7 +25,7 @@ common_requires = [
 
 setup(
     name="torrent-downloader-python",
-    version="1.0.11",
+    version="1.0.12",
     packages=find_packages(),
     package_data={
         'torrent_downloader': ['torrent_downloader_gui.py'],

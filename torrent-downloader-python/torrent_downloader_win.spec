@@ -22,7 +22,7 @@ _fix_paths()
 """)
 
 a = Analysis(
-    ['torrent_downloader_gui.py'],
+    ['torrent_downloader/torrent_downloader_gui.py'],
     pathex=[],
     binaries=collect_dynamic_libs('libtorrent'),
     datas=[],

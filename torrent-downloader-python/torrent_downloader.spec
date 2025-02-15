@@ -46,7 +46,7 @@ _fix_libtorrent()
 """)
 
 a = Analysis(
-    ['torrent_downloader_gui.py'],
+    ['torrent_downloader/torrent_downloader_gui.py'],
     pathex=[
         '/usr/local/lib',
         os.path.join(python_home, 'lib'),

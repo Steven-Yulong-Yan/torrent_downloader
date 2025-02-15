@@ -11,9 +11,9 @@ block_cipher = None
 python_path = sys.executable
 python_home = os.path.dirname(os.path.dirname(python_path))
 
-# Get Tcl/Tk paths
-tcl_lib = os.path.join(python_home, 'lib', 'tcl8.6')
-tk_lib = os.path.join(python_home, 'lib', 'tk8.6')
+# Get Tcl/Tk paths from system frameworks
+tcl_lib = '/System/Library/Frameworks/Tcl.framework/Versions/Current/Resources'
+tk_lib = '/System/Library/Frameworks/Tk.framework/Versions/Current/Resources'
 
 # Create a runtime hook for Tkinter initialization
 with open('tk_runtime_hook.py', 'w') as f:
@@ -127,15 +127,19 @@ a = Analysis(
         '/usr/local/lib',
         os.path.join(python_home, 'lib'),
         os.path.dirname(python_path),
-        '/opt/homebrew/lib/python3.12/site-packages',
+        '/usr/local/lib/python3.13/site-packages',
+        '/usr/local/Cellar/libtorrent-rasterbar/2.0.11/lib',
+        '/usr/local/Cellar/libtorrent-rasterbar/2.0.11/lib/python3.13/site-packages',
+        '/usr/local/opt/python-tk@3.13/libexec',
     ],
     binaries=[
-        ('/opt/homebrew/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks/libtorrent'),
-        ('/opt/homebrew/lib/python3.12/site-packages/libtorrent.cpython-312-darwin.so', 'Frameworks/libtorrent'),
+        ('/usr/local/Cellar/libtorrent-rasterbar/2.0.11/lib/libtorrent-rasterbar.2.0.11.dylib', 'Frameworks/libtorrent'),
+        ('/usr/local/Cellar/libtorrent-rasterbar/2.0.11/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', 'Frameworks/libtorrent'),
+        ('/usr/local/opt/python-tk@3.13/libexec/_tkinter.cpython-313-darwin.so', 'lib-dynload'),
     ],
     datas=[
-        (tcl_lib, 'Frameworks/tcl/Resources'),
-        (tk_lib, 'Frameworks/tk/Resources'),
+        (tcl_lib, 'tcl'),
+        (tk_lib, 'tk'),
     ],
     hiddenimports=[
         'libtorrent',
