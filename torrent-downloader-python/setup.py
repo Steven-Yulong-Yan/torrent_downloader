@@ -12,6 +12,9 @@ setup(
     name="torrent-downloader-python",
     version="1.0.5",
     packages=find_packages(),
+    package_data={
+        'torrent_downloader': ['torrent_downloader_gui.py'],
+    },
     install_requires=libtorrent_requires,
     entry_points={
         "console_scripts": [

@@ -133,18 +133,24 @@ jobs:
           brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
           brew link --force cairo
           
-          # Set PKG_CONFIG_PATH for Cairo
-          echo "PKG_CONFIG_PATH=$(brew --prefix cairo)/lib/pkgconfig" >> $GITHUB_ENV
+          # Set PKG_CONFIG_PATH and other environment variables
+          echo "PKG_CONFIG_PATH=$(brew --prefix cairo)/lib/pkgconfig:$(brew --prefix libffi)/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$(brew --prefix cairo)/lib -L$(brew --prefix libffi)/lib" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix cairo)/include -I$(brew --prefix libffi)/include" >> $GITHUB_ENV
           
           # Install Python dependencies
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
-          pip install pycairo
+          pip install pycairo --no-binary :all:
           pip install cairosvg
           pip install pillow
       
       - name: Generate icons
+        env:
+          PKG_CONFIG_PATH: ${{ env.PKG_CONFIG_PATH }}
+          LDFLAGS: ${{ env.LDFLAGS }}
+          CFLAGS: ${{ env.CFLAGS }}
         run: python convert_icons.py
       
       - name: Build macOS application
