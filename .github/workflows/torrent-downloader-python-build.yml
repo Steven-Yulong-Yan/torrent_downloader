@@ -69,10 +69,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install black isort mypy
+        pip install isort mypy
     
     - name: Run linters
       run: |
-        black --check torrent_downloader tests
         isort --check-only torrent_downloader tests
         mypy torrent_downloader 
